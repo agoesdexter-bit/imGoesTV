@@ -1,80 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>M3U Playlist Player</title>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<style>
-    body { font-family: Arial, sans-serif; background: #111; color: #fff; text-align: center; }
-    select, button { margin: 10px; padding: 5px; }
-    video { width: 80%; max-width: 800px; margin-top: 20px; background: black; }
-</style>
+  <meta charset="UTF-8">
+  <title>My IPTV Player</title>
+  <style>
+    body {
+      background-color: black;
+      color: white;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    video {
+      width: 80%;
+      max-width: 800px;
+      height: auto;
+    }
+  </style>
 </head>
 <body>
+  <h1>📺 My IPTV Player</h1>
+  <video id="videoPlayer" controls autoplay></video>
 
-<h1>📺 M3U Playlist Player</h1>
-<select id="channelList"></select>
-<button onclick="playSelected()">Play</button>
-<br>
-<video id="video" controls></video>
+  <script>
+    const proxy = "https://cors-proxy-xi-ten.vercel.app/api/proxy?url=";
+    const playlistURL = proxy + encodeURIComponent("https://raw.githubusercontent.com/tyo878787/my-iptv-playlist/refs/heads/tyo878787/merged.m3u");
 
-<script>
-const playlistURL = "https://cors-proxy-xi-ten.vercel.app/api/proxy?url=" +
-    encodeURIComponent("https://raw.githubusercontent.com/mgi24/tvdigital/main/idwork.m3u");
-
-async function loadPlaylist() {
-    try {
-        const res = await fetch(playlistURL);
-        const text = await res.text();
-
-        const lines = text.split("\n");
-        const channels = [];
-        for (let i = 0; i < lines.length; i++) {
-            if (lines[i].startsWith("#EXTINF")) {
-                const name = lines[i].split(",")[1] || `Channel ${channels.length+1}`;
-                const url = lines[i+1]?.trim();
-                if (url && url.endsWith(".m3u8")) {
-                    channels.push({ name, url });
-                }
-            }
-        }
-
-        const select = document.getElementById("channelList");
-        channels.forEach(ch => {
-            const opt = document.createElement("option");
-            opt.value = ch.url;
-            opt.textContent = ch.name;
-            select.appendChild(opt);
-        });
-
-        if (channels.length) {
-            playStream(channels[0].url);
-        }
-    } catch (err) {
-        console.error("Failed to load playlist", err);
+    async function loadPlaylist() {
+      const res = await fetch(playlistURL);
+      const text = await res.text();
+      const lines = text.split("\n").filter(line => line && !line.startsWith("#"));
+      if (lines.length > 0) {
+        document.getElementById("videoPlayer").src = proxy + encodeURIComponent(lines[0]);
+      } else {
+        alert("No stream found in playlist");
+      }
     }
-}
 
-function playSelected() {
-    const url = document.getElementById("channelList").value;
-    playStream(url);
-}
-
-function playStream(url) {
-    const video = document.getElementById("video");
-    if (Hls.isSupported()) {
-        const hls = new Hls();
-        hls.loadSource(url);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = url;
-        video.addEventListener('loadedmetadata', () => video.play());
-    }
-}
-
-loadPlaylist();
-</script>
-
+    loadPlaylist();
+  </script>
 </body>
 </html>
