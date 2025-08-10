@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>imGoes TV - OTT Navigator</title>
+    <meta name="description" content="Professional IPTV player with live TV streaming, channel search, and responsive design">
+    <meta name="keywords" content="IPTV, live TV, streaming, television, channels">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
     <style>
         * {
             margin: 0;
@@ -325,38 +328,45 @@
 
         async function loadPlaylist() {
             try {
-                // Try multiple CORS proxy services for Google Sites compatibility
-                const proxies = [
-                    'https://api.allorigins.win/raw?url=',
-                    'https://cors-anywhere.herokuapp.com/',
-                    'https://api.codetabs.com/v1/proxy?quest='
-                ];
-                
+                // Optimized for Vercel deployment - direct fetch should work
                 let playlistText = null;
                 
-                // First try direct fetch
+                // First try direct fetch (works well on Vercel)
                 try {
-                    const response = await fetch(playlistUrl);
+                    const response = await fetch(playlistUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'text/plain, */*',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    
                     if (response.ok) {
                         playlistText = await response.text();
+                        console.log('✅ Playlist loaded successfully via direct fetch');
                     }
                 } catch (corsError) {
-                    console.log('Direct fetch blocked by CORS, trying proxies...');
+                    console.log('Direct fetch failed, trying fallback methods...');
                 }
                 
-                // If direct fetch failed, try proxy services
+                // Fallback proxy services if needed
                 if (!playlistText) {
+                    const proxies = [
+                        'https://api.allorigins.win/raw?url=',
+                        'https://api.codetabs.com/v1/proxy?quest='
+                    ];
+                    
                     for (const proxy of proxies) {
                         try {
                             const proxyUrl = proxy + encodeURIComponent(playlistUrl);
                             const response = await fetch(proxyUrl);
                             if (response.ok) {
                                 playlistText = await response.text();
-                                console.log('Successfully loaded via proxy:', proxy);
+                                console.log('✅ Successfully loaded via proxy:', proxy);
                                 break;
                             }
                         } catch (proxyError) {
-                            console.log('Proxy failed:', proxy, proxyError);
+                            console.log('Proxy failed:', proxy);
                             continue;
                         }
                     }
@@ -373,12 +383,11 @@
                 if (channels.length === 0) {
                     showError('No channels found in playlist');
                 } else {
-                    // Show Google Sites compatibility warning
-                    showGoogleSitesWarning();
+                    console.log(`✅ Successfully loaded ${channels.length} channels`);
                 }
             } catch (error) {
                 console.error('Error loading playlist:', error);
-                showGoogleSitesError();
+                showLoadError();
             }
         }
 
@@ -562,56 +571,23 @@
                 <p>Unable to play: ${channelName}</p>
                 <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.7;">
                     This may be due to:<br>
-                    • CORS restrictions on Google Sites<br>
-                    • Stream not available<br>
-                    • Network connectivity issues
+                    • Stream temporarily unavailable<br>
+                    • Network connectivity issues<br>
+                    • Unsupported stream format
                 </p>
-                <button class="control-btn" onclick="nextChannel()" style="margin-top: 1rem;">Try Next Channel</button>
+                <button class="control-btn" onclick="nextChannel()" style="margin-top: 1rem;">⏭️ Try Next Channel</button>
             `;
         }
 
-        function showGoogleSitesWarning() {
-            // Show a temporary warning about Google Sites limitations
-            const warning = document.createElement('div');
-            warning.style.cssText = `
-                position: fixed;
-                top: 100px;
-                right: 20px;
-                background: rgba(255, 193, 7, 0.9);
-                color: #000;
-                padding: 1rem;
-                border-radius: 10px;
-                max-width: 300px;
-                z-index: 1001;
-                font-size: 0.9rem;
-            `;
-            warning.innerHTML = `
-                <strong>⚠️ Google Sites Notice</strong><br>
-                Some streams may not work due to CORS restrictions. 
-                For best results, consider using GitHub Pages or Netlify.
-                <button onclick="this.parentElement.remove()" style="float: right; margin-left: 10px; background: none; border: none; font-size: 1.2rem; cursor: pointer;">×</button>
-            `;
-            document.body.appendChild(warning);
-            
-            // Auto-remove after 10 seconds
-            setTimeout(() => {
-                if (warning.parentElement) {
-                    warning.remove();
-                }
-            }, 10000);
-        }
-
-        function showGoogleSitesError() {
+        function showLoadError() {
             document.getElementById('channelList').innerHTML = `
                 <div class="error-message">
-                    <strong>🚫 Google Sites CORS Issue</strong><br><br>
-                    Google Sites blocks external content loading. Here are your options:<br><br>
-                    <strong>Solutions:</strong><br>
-                    1. Use GitHub Pages (recommended)<br>
-                    2. Use Netlify or Vercel<br>
-                    3. Download and run locally<br>
-                    4. Use a different hosting service<br><br>
-                    <button class="control-btn" onclick="refreshPlaylist()">Try Again</button>
+                    <strong>⚠️ Loading Error</strong><br><br>
+                    Unable to load the playlist. This could be due to:<br><br>
+                    • Network connectivity issues<br>
+                    • Playlist server temporarily unavailable<br>
+                    • CORS restrictions<br><br>
+                    <button class="control-btn" onclick="refreshPlaylist()">🔄 Try Again</button>
                 </div>
             `;
         }
@@ -644,5 +620,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96cb2cd226136d09',t:'MTc1NDc4MzYyOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96ccb78705bde77e',t:'MTc1NDc5OTc5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
